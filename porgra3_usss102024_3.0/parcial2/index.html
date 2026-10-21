@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcial II - Usuarios</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">::.. PARCIAL II - PROGRAMACION III ..::</a>
+            <div class="collapse navbar-collapse show" id="mnxSistema">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="#" data-form="usuarios">Usuarios</a>
+                </div>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="#" id="lnkSalir">Salir</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="position-absolute" id="usuarios"></div>
+        <div class="position-absolute" id="busqueda_usuarios"></div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/jquery-ui.js" integrity="sha512-nF9ZY+o4GTMKGuKfrwYSdqrbG59QLhdJgtXOPiRZ4CkswwdjyTaPn0qvbRoIsih0ZbEKfCN9dU7lhqkIQUdY/A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            mnxSistema.addEventListener('click', e => {
+                let form = e.target.dataset.form;
+                if (!form) return;
+                e.preventDefault();
+                cargarForm(form);
+            });
+            lnkSalir.addEventListener('click', async e => {
+                e.preventDefault();
+                await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ modulo: 'logout' })
+                });
+                location.href = '/';
+            });
+        });
+        function cargarForm(form, callback) {
+            if ($(`#${form} > form`).length <= 0) {
+                fetch(`/vistas?form=${form}`)
+                    .then(response => response.text())
+                    .then(ventana => {
+                        $(`#${form}`).html(ventana).draggable();
+                        cerrarVentana();
+                        if (callback) callback();
+                    })
+                    .catch(error => console.error('Error al cargar el formulario:', error));
+            } else {
+                $(`#${form}`).show();
+                if (callback) callback();
+            }
+        }
+        function cerrarVentana() {
+            $('.btn-close').off('click').on('click', e => {
+                e.preventDefault();
+                let form = e.target.dataset.form;
+                $(`#${form}`).hide();
+            });
+        }
+    </script>
+</body>
+</html>

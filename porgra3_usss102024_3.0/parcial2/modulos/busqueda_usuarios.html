@@ -1,0 +1,89 @@
+<form id="frmConsultarUsuario">
+    <div class="card text-bg-dark mb-3" style="min-width: 700px;">
+        <div class="card-header">
+            <div class="d-flex">
+                Busqueda de Usuarios
+                <div class="ms-auto">
+                    <button data-form="busqueda_usuarios" type="button" class="btn-close btn-close-white"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th colspan="5">
+                                <input type="search" placeholder="buscar por usuario, nombre"
+                                    id="txtBuscarUsuario" name="txtBuscarUsuario" class="form-control">
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Nombre</th>
+                            <th>Direccion</th>
+                            <th>Telefono</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblUsuarios"></tbody>
+                </table>
+            </div>
+            <small>Usa EDIT (o clic en la fila) para editar el usuario en el formulario.</small>
+        </div>
+    </div>
+</form>
+<script>
+    var listaUsuarios = [];
+
+    txtBuscarUsuario.addEventListener('keyup', () => obtenerUsuarios(txtBuscarUsuario.value));
+    frmConsultarUsuario.addEventListener('submit', (e) => e.preventDefault());
+    tblUsuarios.addEventListener('click', (e) => {
+        let fila = e.target.closest('tr');
+        if (!fila) return;
+        let usuario = listaUsuarios[fila.dataset.idx];
+        if (e.target.closest('.btn-del')) {
+            eliminarUsuario(usuario);
+        } else {
+            modificarUsuario(usuario);
+        }
+    });
+    obtenerUsuarios();
+
+    function esc(texto) {
+        return String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function obtenerUsuarios(buscar = txtBuscarUsuario.value) {
+        let response = await fetch(`/usuarios?buscar=${encodeURIComponent(buscar)}`);
+        if (response.status == 401) { location.href = '/'; return; }
+        listaUsuarios = await response.json();
+        mostrarDatos(listaUsuarios);
+    }
+
+    function mostrarDatos(datos) {
+        tblUsuarios.innerHTML = datos.map((u, i) => `
+            <tr data-idx="${i}" style="cursor:pointer">
+                <td>${esc(u.usuario)}</td>
+                <td>${esc(u.nombre)}</td>
+                <td>${esc(u.direccion)}</td>
+                <td>${esc(u.telefono)}</td>
+                <td class="text-nowrap">
+                    <input type="button" value="EDIT" class="btn btn-primary btn-sm btn-edit"/>
+                    <input type="button" value="DEL" class="btn btn-danger btn-sm btn-del"/>
+                </td>
+            </tr>`).join('');
+    }
+
+    async function eliminarUsuario(data) {
+        if (!confirm(`¿Seguro de eliminar al usuario: ${data.usuario}?`)) return;
+        let msg = await enviarUsuario({ accion: 'eliminar', idUsuario: data.idUsuario });
+        if (msg != 'ok') {
+            alert('Error: ' + msg);
+            return;
+        }
+        if (idUsuario == data.idUsuario) limpiarFormulario();
+        obtenerUsuarios();
+    }
+</script>

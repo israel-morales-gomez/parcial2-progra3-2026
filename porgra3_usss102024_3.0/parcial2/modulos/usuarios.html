@@ -1,0 +1,132 @@
+<form id="frmUsuario">
+    <div class="card text-bg-dark mb-3" style="min-width: 600px;">
+        <div class="card-header">
+            <div class="d-flex">
+                <span id="lblTituloUsuario">Admin de Usuarios</span>
+                <div class="ms-auto">
+                    <button data-form="usuarios" type="button" class="btn-close btn-close-white"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning py-1 px-2 mb-2 d-none" id="avisoEdicion"></div>
+            <div class="row p-1">
+                <div class="col-12 col-md-6">
+                    <input pattern="^[A-Za-z0-9_.]{3,35}$" maxlength="35" required placeholder="Usuario"
+                        name="txtUsuario" id="txtUsuario" class="form-control" type="text">
+                </div>
+                <div class="col-12 col-md-6">
+                    <input maxlength="35" required placeholder="Clave" name="txtClave" id="txtClave"
+                        class="form-control" type="password" autocomplete="new-password">
+                </div>
+            </div>
+            <div class="row p-1">
+                <div class="col-12">
+                    <input pattern="^[A-Za-záéíóúÁÉÍÓÚñÑ ]{3,85}$" maxlength="85" required placeholder="Nombre"
+                        name="txtNombre" id="txtNombre" class="form-control" type="text">
+                </div>
+            </div>
+            <div class="row p-1">
+                <div class="col-12">
+                    <input maxlength="100" placeholder="Direccion" name="txtDireccion" id="txtDireccion"
+                        class="form-control" type="text">
+                </div>
+            </div>
+            <div class="row p-1">
+                <div class="col-12 col-md-4">
+                    <input pattern="^[0-9]{4}-[0-9]{4}$" maxlength="9" required placeholder="Telefono 0000-0000"
+                        name="txtTelefono" id="txtTelefono" class="form-control" type="text">
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-center">
+            <input type="submit" value="Guardar" class="btn btn-primary" id="btnGuardarUsuario">
+            <input type="button" value="Buscar" class="btn btn-secondary" id="btnBuscarUsuario">
+            <input type="reset" value="Limpiar" class="btn btn-warning" id="btnLimpiarUsuario">
+        </div>
+    </div>
+</form>
+<script>
+    var accion = 'nuevo',
+        idUsuario = '';
+
+    frmUsuario.addEventListener('submit', (e) => {
+        e.preventDefault();
+        guardarUsuario();
+    });
+    frmUsuario.addEventListener('reset', (e) => {
+        e.preventDefault();
+        limpiarFormulario();
+    });
+    btnBuscarUsuario.addEventListener('click', (e) => {
+        e.preventDefault();
+        cargarForm('busqueda_usuarios', () => obtenerUsuarios());
+    });
+
+    // Recoge los datos del formulario y los envia a Python (POST /usuario)
+    async function enviarUsuario(datos) {
+        let response = await fetch('/usuario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modulo: 'usuario', ...datos })
+        });
+        if (response.status == 401) { location.href = '/'; return 'Sesion expirada'; }
+        let respuesta = await response.json();
+        return respuesta.msg;
+    }
+
+    async function guardarUsuario() {
+        let msg = await enviarUsuario({
+            accion,
+            idUsuario,
+            usuario: txtUsuario.value,
+            clave: txtClave.value,
+            nombre: txtNombre.value,
+            direccion: txtDireccion.value,
+            telefono: txtTelefono.value
+        });
+        if (msg != 'ok') {
+            alert('Error: ' + msg);
+            return;
+        }
+        if (typeof obtenerUsuarios === 'function') obtenerUsuarios();
+        limpiarFormulario();
+    }
+
+    // Se llama desde la tabla de busqueda al dar clic en un usuario
+    function modificarUsuario(data) {
+        idUsuario = data.idUsuario;
+        accion = 'modificar';
+        txtUsuario.value = data.usuario;
+        txtClave.value = '';
+        txtClave.required = false;
+        txtClave.placeholder = 'Clave (vacia = no cambiar)';
+        txtNombre.value = data.nombre;
+        txtDireccion.value = data.direccion;
+        txtTelefono.value = data.telefono;
+        modoEdicion(true, data.usuario);
+    }
+
+    // Cambia textos/botones segun se este creando o editando un usuario
+    function modoEdicion(editando, usuario = '') {
+        lblTituloUsuario.textContent = editando ? 'Editar Usuario' : 'Admin de Usuarios';
+        avisoEdicion.classList.toggle('d-none', !editando);
+        avisoEdicion.textContent = editando ? `Editando al usuario: ${usuario}` : '';
+        btnGuardarUsuario.value = editando ? 'Actualizar' : 'Guardar';
+        btnLimpiarUsuario.value = editando ? 'Cancelar edicion' : 'Limpiar';
+    }
+
+    function limpiarFormulario() {
+        accion = 'nuevo';
+        idUsuario = '';
+        txtUsuario.value = '';
+        txtClave.value = '';
+        txtClave.required = true;
+        txtClave.placeholder = 'Clave';
+        txtNombre.value = '';
+        txtDireccion.value = '';
+        txtTelefono.value = '';
+        modoEdicion(false);
+    }
+</script>
